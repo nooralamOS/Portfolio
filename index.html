@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Portfolio — work in progress." />
+  <meta name="description" content="Portfolio — under construction." />
   <title>Portfolio — Under Construction</title>
   <style>
     *, *::before, *::after {
@@ -26,14 +26,22 @@
     }
 
     main {
-      width: 100%;
-      max-width: min(1200px, 92vw);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       padding: 2rem;
     }
 
-    .hero {
-      width: 100%;
+    .text {
+      width: min(260px, 78vw);
       height: auto;
+      display: block;
+    }
+
+    .sigil {
+      width: min(2.75rem, 22vw);
+      height: auto;
+      margin-top: 0.25rem;
       display: block;
     }
   </style>
@@ -41,12 +49,13 @@
 <body>
   <main>
     <img
-      class="hero"
+      class="text"
       src="under construction..svg"
-      alt="Work in progress — Portfolio under construction"
-      width="2732"
-      height="1937"
+      alt="we’re under construction, will be back very soon :)"
+      width="640"
+      height="130"
     />
+    <img class="sigil" src="sigil_blue.svg" alt="" width="841" height="825" />
   </main>
 </body>
 </html>
