@@ -14,22 +14,49 @@
 
     html, body {
       height: 100%;
+      overflow: hidden;
     }
 
     body {
       background: #EBEBEB;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       min-height: 100dvh;
       -webkit-font-smoothing: antialiased;
     }
 
     main {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 2rem;
+      position: relative;
+      min-height: 100dvh;
+      width: 100%;
+      z-index: 0;
+    }
+
+    .knicks-flash {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      border: none;
+      margin: 0;
+      padding: 0;
+      transform: scale(1, 1.06);
+      transform-origin: center center;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0;
+    }
+
+    :root {
+      --text-offset-x: 0px;
+      --text-offset-y: -20px;
+    }
+
+    .text-anchor {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      z-index: 1;
+      transform: translate(calc(-50% + var(--text-offset-x)), calc(-50% + var(--text-offset-y)));
     }
 
     .text {
@@ -38,24 +65,165 @@
       display: block;
     }
 
+    .sigil-wrapper {
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-top: 0.40rem;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
     .sigil {
-      width: min(2.75rem, 22vw);
-      height: auto;
-      margin-top: 0.25rem;
       display: block;
+      width: min(3.5rem, 28vw);
+      height: auto;
+    }
+
+    .sigil-wrapper.pulse {
+      animation: sigil-pulse 0.5s ease-in forwards;
+    }
+
+    .sigil-wrapper.pulse .sigil {
+      animation: sigil-light 0.5s cubic-bezier(0.25, 0.9, 0.35, 1) forwards;
+    }
+
+    .sigil-wrapper.intro-pulse {
+      animation: sigil-intro-pulse 0.55s ease-in forwards;
+    }
+
+    .sigil-wrapper.intro-pulse .sigil {
+      animation: sigil-intro-light 0.55s cubic-bezier(0.25, 0.9, 0.35, 1) forwards;
+    }
+
+    @keyframes sigil-pulse {
+      10% {
+        transform: translateX(-50%) scale(1.1);
+      }
+      95% {
+        transform: translateX(-50%) scale(1);
+      }
+    }
+
+    @keyframes sigil-intro-pulse {
+      10% {
+        transform: translateX(-50%) scale(1.16);
+      }
+      95% {
+        transform: translateX(-50%) scale(1);
+      }
+    }
+
+    @keyframes sigil-light {
+      10% {
+        filter: brightness(1.15) saturate(1.15);
+      }
+      55% {
+        filter: brightness(1) saturate(1);
+      }
+    }
+
+    @keyframes sigil-intro-light {
+      10% {
+        filter: brightness(1.22) saturate(1.2);
+      }
+      55% {
+        filter: brightness(1) saturate(1);
+      }
+    }
+
+    @keyframes knicks-flash {
+      0%,
+      10% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+      }
+    }
+
+    .knicks-flash.flash {
+      animation: knicks-flash 2s cubic-bezier(0.33, 0, 0.2, 1) forwards;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .knicks-flash.flash {
+        animation: none;
+      }
+
+      .sigil-wrapper.pulse,
+      .sigil-wrapper.pulse .sigil,
+      .sigil-wrapper.intro-pulse,
+      .sigil-wrapper.intro-pulse .sigil {
+        animation: none;
+      }
     }
   </style>
 </head>
 <body>
   <main>
-    <img
-      class="text"
-      src="under construction..svg"
-      alt="we’re under construction, will be back very soon :)"
-      width="640"
-      height="130"
-    />
-    <img class="sigil" src="sigil_blue.svg" alt="" width="841" height="825" />
+    <object
+      class="knicks-flash"
+      data="Knicks.svg"
+      type="image/svg+xml"
+      aria-hidden="true"
+    ></object>
+    <div class="text-anchor">
+      <img
+        class="text"
+        src="under construction..svg"
+        alt="we’re under construction, will be back very soon :)"
+        width="640"
+        height="130"
+      />
+      <div class="sigil-wrapper">
+        <img class="sigil" src="sigil_orangebg3.svg" alt="" width="820" height="681" />
+      </div>
+    </div>
   </main>
+  <script>
+    const sigilWrapper = document.querySelector('.sigil-wrapper');
+    const knicksFlash = document.querySelector('.knicks-flash');
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let hasPulsed = false;
+
+    function playPulse(className) {
+      hasPulsed = true;
+      sigilWrapper.classList.remove('pulse', 'intro-pulse');
+      void sigilWrapper.offsetWidth;
+      sigilWrapper.classList.add(className);
+    }
+
+    function playKnicksFlash() {
+      if (prefersReducedMotion) return;
+      knicksFlash.classList.remove('flash');
+      void knicksFlash.offsetWidth;
+      knicksFlash.classList.add('flash');
+    }
+
+    sigilWrapper.addEventListener('click', () => {
+      playPulse('pulse');
+      playKnicksFlash();
+    });
+
+    knicksFlash.addEventListener('animationend', () => {
+      knicksFlash.classList.remove('flash');
+    });
+
+    sigilWrapper.addEventListener('animationend', (event) => {
+      if (event.target === sigilWrapper) {
+        sigilWrapper.classList.remove('pulse', 'intro-pulse');
+      }
+    });
+
+    if (!prefersReducedMotion) {
+      setTimeout(() => {
+        if (!hasPulsed) {
+          playPulse('intro-pulse');
+        }
+      }, 550);
+    }
+  </script>
 </body>
 </html>
