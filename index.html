@@ -40,11 +40,29 @@
       border: none;
       margin: 0;
       padding: 0;
-      transform: scale(1, 1.06);
       transform-origin: center center;
       pointer-events: none;
       z-index: 0;
       opacity: 0;
+    }
+
+    .knicks-flash--desktop {
+      transform: scale(1, 1.06);
+    }
+
+    .knicks-flash--mobile {
+      display: none;
+      transform: none;
+    }
+
+    @media (max-width: 768px) {
+      .knicks-flash--desktop {
+        display: none;
+      }
+
+      .knicks-flash--mobile {
+        display: block;
+      }
     }
 
     :root {
@@ -73,7 +91,10 @@
       transform: translateX(-50%);
       margin-top: 0.40rem;
       cursor: pointer;
+      touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     .sigil {
@@ -165,8 +186,14 @@
 <body>
   <main>
     <object
-      class="knicks-flash"
+      class="knicks-flash knicks-flash--desktop"
       data="Knicks.svg"
+      type="image/svg+xml"
+      aria-hidden="true"
+    ></object>
+    <object
+      class="knicks-flash knicks-flash--mobile"
+      data="Knicks_mobile.svg"
       type="image/svg+xml"
       aria-hidden="true"
     ></object>
@@ -185,7 +212,7 @@
   </main>
   <script>
     const sigilWrapper = document.querySelector('.sigil-wrapper');
-    const knicksFlash = document.querySelector('.knicks-flash');
+    const knicksFlashes = document.querySelectorAll('.knicks-flash');
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let hasPulsed = false;
 
@@ -198,18 +225,31 @@
 
     function playKnicksFlash() {
       if (prefersReducedMotion) return;
-      knicksFlash.classList.remove('flash');
-      void knicksFlash.offsetWidth;
-      knicksFlash.classList.add('flash');
+      knicksFlashes.forEach((knicksFlash) => {
+        knicksFlash.classList.remove('flash');
+        void knicksFlash.offsetWidth;
+        knicksFlash.classList.add('flash');
+      });
     }
 
-    sigilWrapper.addEventListener('click', () => {
+    function activateSigil(event) {
+      if (event.type === 'touchend') {
+        event.preventDefault();
+      }
       playPulse('pulse');
       playKnicksFlash();
+    }
+
+    sigilWrapper.addEventListener('touchend', activateSigil, { passive: false });
+    sigilWrapper.addEventListener('click', (event) => {
+      if (event.pointerType === 'touch') return;
+      activateSigil(event);
     });
 
-    knicksFlash.addEventListener('animationend', () => {
-      knicksFlash.classList.remove('flash');
+    knicksFlashes.forEach((knicksFlash) => {
+      knicksFlash.addEventListener('animationend', () => {
+        knicksFlash.classList.remove('flash');
+      });
     });
 
     sigilWrapper.addEventListener('animationend', (event) => {
