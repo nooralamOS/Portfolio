@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="noorslens" />
+  <meta name="description" content="noor alam" />
   <link rel="icon" href="sigil_orangebg3.svg" type="image/svg+xml" />
   <title>noorslens</title>
   <style>
@@ -165,8 +165,19 @@
       }
     }
 
+    @keyframes knicks-flash-boost {
+      10% {
+        filter: brightness(1.16) saturate(1.2);
+      }
+      100% {
+        filter: brightness(1) saturate(1);
+      }
+    }
+
     .knicks-flash.flash {
-      animation: knicks-flash 2s cubic-bezier(0.33, 0, 0.2, 1) forwards;
+      animation:
+        knicks-flash 2s cubic-bezier(0.33, 0, 0.2, 1) forwards,
+        knicks-flash-boost 0.4s cubic-bezier(0.25, 0.9, 0.35, 1) forwards;
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -247,7 +258,8 @@
     });
 
     knicksFlashes.forEach((knicksFlash) => {
-      knicksFlash.addEventListener('animationend', () => {
+      knicksFlash.addEventListener('animationend', (event) => {
+        if (event.animationName !== 'knicks-flash') return;
         knicksFlash.classList.remove('flash');
       });
     });
