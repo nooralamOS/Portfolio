@@ -21,7 +21,7 @@
     }
 
     body {
-      background: #EBEBEB;
+      background: #EBEBEB; /* #EBEBEB */
       min-height: 100dvh;
       -webkit-font-smoothing: antialiased;
     }
@@ -33,38 +33,13 @@
       z-index: 0;
     }
 
-    .knicks-flash {
+    .confetti-canvas {
       position: fixed;
       inset: 0;
       width: 100%;
       height: 100%;
-      display: block;
-      border: none;
-      margin: 0;
-      padding: 0;
-      transform-origin: center center;
       pointer-events: none;
-      z-index: 0;
-      opacity: 0;
-    }
-
-    .knicks-flash--desktop {
-      transform: scale(1, 1.06);
-    }
-
-    .knicks-flash--mobile {
-      display: none;
-      transform: none;
-    }
-
-    @media (max-width: 768px) {
-      .knicks-flash--desktop {
-        display: none;
-      }
-
-      .knicks-flash--mobile {
-        display: block;
-      }
+      z-index: 2;
     }
 
     :root {
@@ -157,36 +132,7 @@
       }
     }
 
-    @keyframes knicks-flash {
-      0%,
-      10% {
-        opacity: 1;
-      }
-      100% {
-        opacity: 0;
-      }
-    }
-
-    @keyframes knicks-flash-boost {
-      4% {
-        filter: brightness(1.16) saturate(1.2);
-      }
-      100% {
-        filter: brightness(1) saturate(1);
-      }
-    }
-
-    .knicks-flash.flash {
-      animation:
-        knicks-flash 2s cubic-bezier(0.33, 0, 0.2, 1) forwards,
-        knicks-flash-boost 0.4s cubic-bezier(0.25, 0.9, 0.35, 1) forwards;
-    }
-
     @media (prefers-reduced-motion: reduce) {
-      .knicks-flash.flash {
-        animation: none;
-      }
-
       .sigil-wrapper.pulse,
       .sigil-wrapper.pulse .sigil,
       .sigil-wrapper.intro-pulse,
@@ -198,18 +144,6 @@
 </head>
 <body>
   <main>
-    <object
-      class="knicks-flash knicks-flash--desktop"
-      data="Knicks.svg"
-      type="image/svg+xml"
-      aria-hidden="true"
-    ></object>
-    <object
-      class="knicks-flash knicks-flash--mobile"
-      data="Knicks_mobile.svg"
-      type="image/svg+xml"
-      aria-hidden="true"
-    ></object>
     <div class="text-anchor">
       <img
         class="text"
@@ -223,11 +157,28 @@
       </div>
     </div>
   </main>
+  <canvas class="confetti-canvas"></canvas>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
   <script>
     const sigilWrapper = document.querySelector('.sigil-wrapper');
-    const knicksFlashes = document.querySelectorAll('.knicks-flash');
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Weighted toward blue/orange, with occasional silver and rare black.
+    const knicksColors = [
+      '#006bb6', '#006bb6', '#006bb6', '#006bb6',
+      '#f58426', '#f58426', '#f58426', '#f58426',
+      '#bec0c2',
+      '#231f20',
+    ];
+    const fireConfetti = confetti.create(document.querySelector('.confetti-canvas'), {
+      resize: true,
+      useWorker: true,
+    });
     let hasPulsed = false;
+
+    // Warm up the confetti worker so the first burst fires with no delay.
+    if (!prefersReducedMotion) {
+      fireConfetti({ particleCount: 0 });
+    }
 
     function playPulse(className) {
       hasPulsed = true;
@@ -236,13 +187,33 @@
       sigilWrapper.classList.add(className);
     }
 
-    function playKnicksFlash() {
+    function playConfetti() {
       if (prefersReducedMotion) return;
-      knicksFlashes.forEach((knicksFlash) => {
-        knicksFlash.classList.remove('flash');
-        void knicksFlash.offsetWidth;
-        knicksFlash.classList.add('flash');
-      });
+
+      const duration = 2 * 1000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0, colors: knicksColors, scalar: 1.2 };
+
+      function randomInRange(min, max) {
+        return Math.random() * (max - min) + min;
+      }
+
+      function burst() {
+        const timeLeft = animationEnd - Date.now();
+        const particleCount = 50 * (Math.max(timeLeft, 0) / duration);
+        fireConfetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+        fireConfetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.4, 0.6), y: Math.random() - 0.2 } }));
+        fireConfetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+      }
+
+      // Fire instantly, then keep going for the rest of the duration.
+      burst();
+      const interval = setInterval(function () {
+        if (animationEnd - Date.now() <= 0) {
+          return clearInterval(interval);
+        }
+        burst();
+      }, 250);
     }
 
     function activateSigil(event) {
@@ -250,20 +221,13 @@
         event.preventDefault();
       }
       playPulse('pulse');
-      playKnicksFlash();
+      playConfetti();
     }
 
     sigilWrapper.addEventListener('touchend', activateSigil, { passive: false });
     sigilWrapper.addEventListener('click', (event) => {
       if (event.pointerType === 'touch') return;
       activateSigil(event);
-    });
-
-    knicksFlashes.forEach((knicksFlash) => {
-      knicksFlash.addEventListener('animationend', (event) => {
-        if (event.animationName !== 'knicks-flash') return;
-        knicksFlash.classList.remove('flash');
-      });
     });
 
     sigilWrapper.addEventListener('animationend', (event) => {
