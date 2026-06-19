@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="noor alam" />
-  <link rel="icon" href="sigil_orangebg3.svg" type="image/svg+xml" />
-  <link rel="icon" href="favicon.png" type="image/png" sizes="256x256" />
-  <link rel="apple-touch-icon" href="favicon.png" />
+  <link rel="icon" href="icons/sigil_orangebg3.svg" type="image/svg+xml" />
+  <link rel="icon" href="icons/favicon.png" type="image/png" sizes="256x256" />
+  <link rel="apple-touch-icon" href="icons/favicon.png" />
   <title>noorslens</title>
   <style>
     *, *::before, *::after {
@@ -147,13 +147,13 @@
     <div class="text-anchor">
       <img
         class="text"
-        src="under construction..svg"
+        src="icons/under construction..svg"
         alt="we’re under construction, will be back very soon :)"
         width="640"
         height="130"
       />
       <div class="sigil-wrapper">
-        <img class="sigil" src="sigil_orangebg3.svg" alt="" width="820" height="681" />
+        <img class="sigil" src="icons/sigil_orangebg3.svg" alt="" width="820" height="681" />
       </div>
     </div>
   </main>
@@ -174,6 +174,13 @@
       useWorker: true,
     });
     let hasPulsed = false;
+
+    const fireworkAudio = new Audio('audio/minecraft-firework.mp3');
+    fireworkAudio.volume = 0.67;
+    function playFireworkSound() {
+      fireworkAudio.currentTime = 0;
+      fireworkAudio.play().catch(() => {});
+    }
 
     // Warm up the confetti worker so the first burst fires with no delay.
     if (!prefersReducedMotion) {
@@ -222,6 +229,7 @@
       }
       playPulse('pulse');
       playConfetti();
+      playFireworkSound();
     }
 
     sigilWrapper.addEventListener('touchend', activateSigil, { passive: false });
