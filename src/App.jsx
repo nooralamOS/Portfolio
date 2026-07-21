@@ -128,12 +128,15 @@ function CustomCursor() {
   );
 }
 
+const VIDEO_BASE = "https://pub-ce8ca5d40e7f481f8b660ef1340d7170.r2.dev";
+const r2Src = (filename) => `${VIDEO_BASE}/${encodeURIComponent(filename)}`;
+
 const WORK_ITEMS = [
-  { id: "hlm", title: "Humanity’s Last Machine", video: "/videos/HLM.mp4", ratio: "3416 / 1712", link: "https://humanityslastmachine.com", zoom: true },
-  { id: "wmzt", title: "World Model Deep-Dive", video: "/videos/wmzt.mp4", ratio: "3360 / 1790", link: "https://worldmodel.netlify.app" },
-  { id: "mtc", title: "MTC", video: "/videos/MTC.mp4", ratio: "1920 / 1080", link: "https://mtc.so" },
-  { id: "pace", title: "Pace V3 Launch Video", video: "/videos/PACE.mp4", ratio: "3840 / 2160", link: "https://withpace.com/", zoom: true, sound: true },
-  { id: "ziptero", title: "Ziptero (launching soon)", video: "/videos/Ziptero.mp4", ratio: "3416 / 1682", pixelate: true },
+  { id: "hlm", title: "Humanity’s Last Machine", video: r2Src("HLM.mp4"), ratio: "3416 / 1712", link: "https://humanityslastmachine.com", zoom: true },
+  { id: "wmzt", title: "World Model Deep-Dive", video: r2Src("wmzt.mp4"), ratio: "3360 / 1790", link: "https://worldmodel.netlify.app" },
+  { id: "mtc", title: "MTC", video: r2Src("MTC.mp4"), ratio: "1920 / 1080", link: "https://mtc.so" },
+  { id: "pace", title: "Pace V3 Launch Video", video: r2Src("PACE.mp4"), ratio: "3840 / 2160", link: "https://withpace.com/", zoom: true, sound: true },
+  { id: "ziptero", title: "Ziptero (launching soon)", video: r2Src("Ziptero.mp4"), ratio: "3416 / 1682", pixelate: true },
 ];
 
 const BRAND_SLIDES = [
@@ -143,8 +146,6 @@ const BRAND_SLIDES = [
   { id: "mtc", type: "image", src: "/brand-identity/mtc-footer.png", label: "Muslim Tech Collaborative pattern", ratio: "3216 / 1859" },
   { id: "logo", type: "image", src: "/brand-identity/my-logo-variants.png", label: "noorslens logo color variants", ratio: "2210 / 1860" },
 ];
-const VIDEO_BASE = "https://pub-ce8ca5d40e7f481f8b660ef1340d7170.r2.dev";
-const r2Src = (filename) => `${VIDEO_BASE}/${encodeURIComponent(filename)}`;
 
 const VIDEO_SLIDES = [
   {
@@ -177,7 +178,7 @@ const VIDEO_SLIDES = [
   },
   {
     id: "smoking",
-    src: "/videos/SMOKING KILLS.png",
+    src: "/images/SMOKING KILLS.png",
     title: "SMOKING KILLS (coming soon)",
     ratio: "2989 / 1674",
   },
