@@ -132,11 +132,11 @@ const VIDEO_BASE = "https://pub-ce8ca5d40e7f481f8b660ef1340d7170.r2.dev";
 const r2Src = (filename) => `${VIDEO_BASE}/${encodeURIComponent(filename)}`;
 
 const WORK_ITEMS = [
-  { id: "hlm", title: "Humanity’s Last Machine", video: r2Src("HLM.mp4"), ratio: "3416 / 1712", link: "https://humanityslastmachine.com", zoom: true },
-  { id: "wmzt", title: "World Model Deep-Dive", video: r2Src("wmzt.mp4"), ratio: "3360 / 1790", link: "https://worldmodel.netlify.app" },
-  { id: "mtc", title: "MTC", video: r2Src("MTC.mp4"), ratio: "1920 / 1080", link: "https://mtc.so" },
-  { id: "pace", title: "Pace V3 Launch Video", video: r2Src("PACE.mp4"), ratio: "3840 / 2160", link: "https://withpace.com/", zoom: true, sound: true },
-  { id: "ziptero", title: "Ziptero (launching soon)", video: r2Src("Ziptero.mp4"), ratio: "3416 / 1682", pixelate: true },
+  { id: "hlm", title: "Humanity’s Last Machine", video: r2Src("HLM-compressed.mp4"), ratio: "3416 / 1712", link: "https://humanityslastmachine.com", zoom: true },
+  { id: "wmzt", title: "World Model Deep-Dive", video: r2Src("wmzt-compressed.mp4"), ratio: "3360 / 1790", link: "https://worldmodel.netlify.app" },
+  { id: "mtc", title: "MTC", video: r2Src("MTC-compressed.mp4"), ratio: "1920 / 1080", link: "https://mtc.so" },
+  { id: "pace", title: "Pace V3 Launch Video", video: r2Src("PACE-cpmpressed.mp4"), ratio: "3840 / 2160", link: "https://withpace.com/", zoom: true, sound: true },
+  { id: "ziptero", title: "Ziptero (launching soon)", video: r2Src("Ziptero-compressed.mp4"), ratio: "3416 / 1682", pixelate: true },
 ];
 
 const BRAND_SLIDES = [
@@ -749,7 +749,7 @@ function SoundOffIcon() {
   );
 }
 
-function VideoCard({ item, onHitClick, isActive }) {
+function VideoCard({ item, onHitClick, isActive, shouldLoad }) {
   const videoRef = useRef(null);
   const scrubRef = useRef(null);
   const scrubbingRef = useRef(false);
@@ -780,10 +780,24 @@ function VideoCard({ item, onHitClick, isActive }) {
   }, [isImage]);
 
   useEffect(() => {
-    if (!isActive) {
+    const video = videoRef.current;
+    if (!video) return;
+    if (isActive) {
+      // A slide that was already preloaded as a neighbor is paused with no
+      // pending load, so adding the autoplay attribute alone won't play it —
+      // that only fires during the initial resource-load step.
+      video.play().catch(() => {});
+    } else {
       setMuted(true);
+      video.pause();
     }
   }, [isActive]);
+
+  // Dropping src (going >1 slide away) doesn't cancel an in-flight fetch on
+  // its own — load() forces the element to abandon it and release the buffer.
+  useEffect(() => {
+    if (!shouldLoad && !isImage) videoRef.current?.load();
+  }, [shouldLoad, isImage]);
 
   const togglePlay = (e) => {
     e.stopPropagation();
@@ -850,12 +864,12 @@ function VideoCard({ item, onHitClick, isActive }) {
         <video
           ref={videoRef}
           className="videos__media"
-          src={item.src}
-          autoPlay
+          src={shouldLoad ? item.src : undefined}
+          autoPlay={isActive}
           muted={muted}
           loop
           playsInline
-          preload="metadata"
+          preload={shouldLoad ? "metadata" : "none"}
         />
       </a>
       <div className="videos__controls">
@@ -1107,6 +1121,7 @@ function VideoSection() {
                     <VideoCard
                       item={item}
                       isActive={i === active}
+                      shouldLoad={Math.abs(i - active) <= 1}
                       onHitClick={(e) => {
                         if (dragRef.current.moved) {
                           e.preventDefault();
