@@ -3,4 +3,3 @@ videos/
 node_modules/
 dist/
 public/videos/
-package-lock.json
