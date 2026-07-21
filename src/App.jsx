@@ -414,21 +414,18 @@ const PIXELATE_COLUMNS = 120;
 // Mobile browsers cap how many <video> elements can autoplay at once and
 // silently fall back to a tap-to-play affordance past that limit — with 5+
 // work-card videos all trying to autoplay on mount, some always lost. This
-// defers both the fetch and the play() call until a card is actually (near)
-// the viewport, so only what's on screen is ever competing for that slot.
+// loads normally (src set from mount, like any video) but only calls
+// play()/pause() once a card is actually near the viewport, so only what's
+// on screen is ever competing for that slot.
 function useAutoplayInView(rootMargin = "200px") {
   const videoRef = useRef(null);
   const [inView, setInView] = useState(false);
-  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        setInView(entry.isIntersecting);
-        if (entry.isIntersecting) setLoaded(true);
-      },
+      ([entry]) => setInView(entry.isIntersecting),
       { rootMargin, threshold: 0.15 }
     );
     observer.observe(el);
@@ -442,11 +439,11 @@ function useAutoplayInView(rootMargin = "200px") {
     else video.pause();
   }, [inView]);
 
-  return { videoRef, loaded };
+  return videoRef;
 }
 
 function PixelatedVideo({ src, label }) {
-  const { videoRef, loaded } = useAutoplayInView();
+  const videoRef = useAutoplayInView();
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -474,11 +471,11 @@ function PixelatedVideo({ src, label }) {
       <video
         ref={videoRef}
         className="work-card__video work-card__video--source"
-        src={loaded ? src : undefined}
+        src={src}
         muted
         loop
         playsInline
-        preload={loaded ? "auto" : "none"}
+        preload="auto"
         aria-hidden="true"
       />
       <canvas ref={canvasRef} className="work-card__video work-card__video--pixelated" aria-label={label} />
@@ -487,7 +484,7 @@ function PixelatedVideo({ src, label }) {
 }
 
 function ZoomableVideo({ item }) {
-  const { videoRef, loaded } = useAutoplayInView();
+  const videoRef = useAutoplayInView();
   const [muted, setMuted] = useState(true);
 
   const toggleMute = (e) => {
@@ -501,11 +498,11 @@ function ZoomableVideo({ item }) {
       <video
         ref={videoRef}
         className="work-card__video"
-        src={loaded ? item.video : undefined}
+        src={item.video}
         muted={item.sound ? muted : true}
         loop
         playsInline
-        preload={loaded ? "auto" : "none"}
+        preload="auto"
         aria-label={item.title}
         style={{
           transform: "translate(0%, 0%) scale(1.01)",
@@ -527,17 +524,17 @@ function ZoomableVideo({ item }) {
 }
 
 function PlainWorkVideo({ item }) {
-  const { videoRef, loaded } = useAutoplayInView();
+  const videoRef = useAutoplayInView();
 
   return (
     <video
       ref={videoRef}
       className="work-card__video"
-      src={loaded ? item.video : undefined}
+      src={item.video}
       muted
       loop
       playsInline
-      preload={loaded ? "auto" : "none"}
+      preload="auto"
       aria-label={item.title}
     />
   );
@@ -822,18 +819,21 @@ function VideoCard({ item, onHitClick, isActive, shouldLoad }) {
   }, [isImage]);
 
   useEffect(() => {
+    if (!isActive) setMuted(true);
+  }, [isActive]);
+
+  useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    if (isActive) {
+    if (shouldLoad) {
       // A slide that was already preloaded as a neighbor is paused with no
       // pending load, so adding the autoplay attribute alone won't play it —
       // that only fires during the initial resource-load step.
       video.play().catch(() => {});
     } else {
-      setMuted(true);
       video.pause();
     }
-  }, [isActive]);
+  }, [shouldLoad]);
 
   // Dropping src (going >1 slide away) doesn't cancel an in-flight fetch on
   // its own — load() forces the element to abandon it and release the buffer.
@@ -907,7 +907,7 @@ function VideoCard({ item, onHitClick, isActive, shouldLoad }) {
           ref={videoRef}
           className="videos__media"
           src={shouldLoad ? item.src : undefined}
-          autoPlay={isActive}
+          autoPlay={shouldLoad}
           muted={muted}
           loop
           playsInline
