@@ -1,0 +1,482 @@
+@font-face {
+  font-family: "Season Mix";
+  src: url("/fonts/SeasonMix-TRIAL-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Season Sans";
+  src: url("/fonts/SeasonSans-TRIAL-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --orange: #ff9909;
+  --ink: #000;
+  --ink-muted: rgba(0, 0, 0, 0.4);
+  --block: #d9d9d9;
+  --bg: #fff;
+
+  --edge: clamp(12px, 1.8vw, 28px);
+  --display-size: clamp(27px, 2.6vw, 44px);
+  --label-size: clamp(13px, 1.05vw, 17px);
+  --section-gap: clamp(80px, 8.5vw, 150px);
+  --heading-gap: clamp(20px, 1.8vw, 32px);
+
+  --cursor: image-set(
+      url("/icons/orange-cursor-1x.png") 0.8x,
+      url("/icons/orange-cursor-2x.png") 1.6x
+    )
+    3 1;
+
+  --dot-color: rgba(0, 0, 0, 0.14);
+}
+
+html[data-dots="orange"] {
+  --dot-color: rgba(255, 153, 9, 0.45);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg);
+  background-image: radial-gradient(var(--dot-color) 1px, transparent 1.6px);
+  background-size: 22px 22px;
+  color: var(--ink);
+  font-family: "Season Sans", "Helvetica Neue", Arial, sans-serif;
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+  cursor: url("/icons/orange-cursor-1x.png") 2 1, auto;
+  cursor: var(--cursor), auto;
+}
+
+a,
+button {
+  cursor: url("/icons/orange-cursor-1x.png") 2 1, pointer;
+  cursor: var(--cursor), pointer;
+}
+
+/* DOM-based cursor (fine pointers only) — native cursor rules above are the fallback */
+
+html.custom-cursor-active,
+html.custom-cursor-active * {
+  cursor: none;
+}
+
+.cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.cursor.is-visible {
+  opacity: 1;
+}
+
+.cursor__img {
+  display: block;
+  width: 40px;
+  height: auto;
+  transition-property: transform, filter, opacity;
+  transition-duration: 0.25s;
+  transition-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+.cursor__img--base {
+  transform-origin: 2.5px 1.25px;
+}
+
+/* select-cursor.svg has generous padding in its viewBox, so it renders
+   larger and nudged so its glyph sits on the pointer tip */
+.cursor__img--select {
+  position: absolute;
+  top: -6px;
+  left: -4px;
+  width: 54px;
+  opacity: 0;
+  transform: scale(0.85);
+  transform-origin: 50% 50%;
+}
+
+.cursor.is-hovering .cursor__img--base {
+  opacity: 0;
+  transform: scale(0.9);
+}
+
+.cursor.is-hovering .cursor__img--select {
+  opacity: 1;
+  transform: scale(1.18);
+  filter: brightness(1.15);
+}
+
+button {
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.page {
+  padding-bottom: clamp(100px, 10vw, 200px);
+}
+
+/* ---------- header ---------- */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(14px, 1.6vw, 28px) var(--edge) 0;
+}
+
+.header__logo {
+  display: block;
+  height: clamp(30px, 2.5vw, 42px);
+  width: auto;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.nav {
+  display: flex;
+  align-items: baseline;
+  gap: clamp(14px, 1.5vw, 24px);
+  font-size: var(--label-size);
+  letter-spacing: 0.01em;
+}
+
+.nav__link {
+  color: var(--ink);
+  text-decoration: none;
+  transition-property: color, opacity;
+  transition-duration: 0.2s;
+}
+
+.nav__link--muted {
+  color: var(--ink-muted);
+}
+
+.nav__link:hover {
+  color: var(--orange);
+}
+
+/* ---------- hero ---------- */
+
+.hero {
+  padding: clamp(56px, 6.5vw, 120px) var(--edge) 0;
+}
+
+.hero__line {
+  font-family: "Season Mix", "Season Sans", serif;
+  font-weight: 400;
+  font-size: var(--display-size);
+  line-height: 1.22;
+  max-width: 25ch;
+  text-wrap: balance;
+  -webkit-text-stroke: 0;
+}
+
+.hero__accent {
+  color: var(--orange);
+}
+
+/* ---------- shared section bits ---------- */
+
+.section {
+  margin-top: var(--section-gap);
+}
+
+.section__heading {
+  font-family: "Season Mix", "Season Sans", serif;
+  font-weight: 400;
+  font-size: var(--display-size);
+  line-height: 1.2;
+  text-wrap: balance;
+  padding: 0 var(--edge);
+  margin-bottom: var(--heading-gap);
+}
+
+.placeholder {
+  background: var(--block);
+}
+
+/* ---------- work grid ---------- */
+
+.work {
+  margin-top: clamp(32px, 3.5vw, 64px);
+}
+
+.work__grid {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(14px, 1.3vw, 22px);
+  padding: 0 var(--edge);
+}
+
+.work__col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(14px, 1.3vw, 22px);
+}
+
+.work-card__media {
+  position: relative;
+  aspect-ratio: 2050 / 1322;
+  width: 100%;
+  background: var(--block);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.work-card__video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* invisible source video that feeds the pixelation canvas */
+.work-card__video--source {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.work-card__video--pixelated {
+  image-rendering: pixelated;
+}
+
+.work-card__video--zoom {
+  transform: scale(1.05);
+}
+
+.work-card__title {
+  font-family: "Season Sans", "Helvetica Neue", Arial, sans-serif;
+  font-weight: 500;
+  font-size: var(--label-size);
+  letter-spacing: -0.01em;
+  margin-top: clamp(8px, 0.7vw, 12px);
+}
+
+/* ---------- brand slider ---------- */
+
+.brand {
+  --brand-h: clamp(230px, 23.5vw, 400px);
+  --brand-gap: clamp(6px, 0.6vw, 12px);
+}
+
+.brand__stage {
+  position: relative;
+}
+
+/* GL overlay extends past the strip so the edge fan can bend tiles outward.
+   Overhang must cover FAN/2 of the strip height on each side. */
+.brand__gl {
+  position: absolute;
+  left: 0;
+  top: calc(var(--brand-h) * -0.16);
+  width: 100%;
+  height: calc(var(--brand-h) * 1.32);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Keep the heading above the warped tiles, and pad the gap by the fan's
+   overhang so the crest never crowds the title */
+.brand .section__heading {
+  position: relative;
+  z-index: 2;
+  margin-bottom: calc(var(--heading-gap) + var(--brand-h) * 0.16);
+}
+
+.brand__marquee {
+  overflow: hidden;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.brand__track {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+}
+
+.brand__set {
+  display: flex;
+  gap: var(--brand-gap);
+  padding-right: var(--brand-gap);
+}
+
+.brand__slide {
+  flex: none;
+  height: var(--brand-h);
+  background: var(--block);
+}
+
+.brand__media {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ---------- video carousel ---------- */
+
+.videos__stage {
+  margin-top: clamp(28px, 3vw, 52px);
+}
+
+.videos__viewport {
+  overflow: hidden;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.videos__track {
+  display: flex;
+  gap: var(--video-gap);
+  transition-property: transform;
+  transition-duration: 0.6s;
+  transition-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --video-w: 44vw;
+  --video-gap: 2.2vw;
+  --drag-offset: 0px;
+  transform: translateX(
+    calc(50vw - var(--video-w) / 2 - var(--active) * (var(--video-w) + var(--video-gap)) + var(--drag-offset))
+  );
+}
+
+.videos__track.is-dragging {
+  transition: none;
+}
+
+.videos__slide {
+  flex: 0 0 var(--video-w);
+  aspect-ratio: 2974 / 1917;
+  display: block;
+  padding: 0;
+  transform: scale(1);
+  opacity: 1;
+  transition-property: transform, opacity;
+  transition-duration: 0.6s;
+  transition-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+.videos__slide[aria-current="false"] {
+  transform: scale(0.905);
+  opacity: 0.52;
+}
+
+.videos__stepper-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 1.1vw, 16px);
+  margin-top: clamp(24px, 2.6vw, 44px);
+}
+
+/* pasito's own sizing ratios, uniformly scaled down */
+.video-stepper {
+  --pill-bg: #a1a1a1;
+  --pill-active-bg: #a1a1a1;
+  --pill-container-bg: #d9d9d9;
+  --pill-container-border: transparent;
+  zoom: 1.15;
+}
+
+.videos__arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: clamp(22px, 1.8vw, 30px);
+  height: clamp(22px, 1.8vw, 30px);
+  border-radius: 999px;
+  background: #d9d9d9;
+  color: #a1a1a1;
+  transition-property: color, background, opacity;
+  transition-duration: 0.2s;
+}
+
+.videos__arrow svg {
+  width: 45%;
+  height: 45%;
+}
+
+.videos__arrow:hover {
+  color: var(--orange);
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 768px) {
+  :root {
+    --display-size: clamp(26px, 7vw, 34px);
+    --label-size: 15px;
+  }
+
+  .header__logo {
+    height: 30px;
+  }
+
+  .hero {
+    padding-top: 72px;
+  }
+
+  /* single column: dissolve the two columns and restore original card order */
+  .work__grid {
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  .work__col {
+    display: contents;
+  }
+
+  .work-card {
+    order: var(--i);
+  }
+
+  .brand {
+    --brand-h: 210px;
+  }
+
+  .videos__track {
+    --video-w: 74vw;
+    --video-gap: 3.5vw;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .videos__track,
+  .videos__slide {
+    transition-duration: 0.01s;
+  }
+}
