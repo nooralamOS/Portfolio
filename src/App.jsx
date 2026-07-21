@@ -186,6 +186,13 @@ const VIDEO_SLIDES = [
 const VIDEO_COUNT = VIDEO_SLIDES.length;
 const VIDEO_CLONE_SETS = 3;
 const VIDEO_SLIDE_CELLS = Array.from({ length: VIDEO_COUNT * VIDEO_CLONE_SETS }, (_, i) => i);
+// The first/last items sit at the seam between clone segments — stepping past
+// either one snaps `active` to the equivalent slide in the canonical segment,
+// which swaps which cloned DOM cell is "the neighbor" instantly. If that cell
+// wasn't preloaded, its video flashes blank for a moment. Keeping every clone
+// copy of just these two boundary items preloaded (not just the ones nearest
+// `active`) means whichever copy the snap reveals is already buffered.
+const VIDEO_WRAP_ITEMS = new Set([0, VIDEO_COUNT - 1]);
 const DRAG_THRESHOLD_RATIO = 0.18;
 
 const SHOW_WORK_LINK = true;
@@ -788,7 +795,7 @@ function SoundOffIcon() {
   );
 }
 
-function VideoCard({ item, onHitClick, isActive, shouldLoad }) {
+function VideoCard({ item, onHitClick, isActive, isNear, shouldLoad }) {
   const videoRef = useRef(null);
   const scrubRef = useRef(null);
   const scrubbingRef = useRef(false);
@@ -825,7 +832,7 @@ function VideoCard({ item, onHitClick, isActive, shouldLoad }) {
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    if (shouldLoad) {
+    if (isNear) {
       // A slide that was already preloaded as a neighbor is paused with no
       // pending load, so adding the autoplay attribute alone won't play it —
       // that only fires during the initial resource-load step.
@@ -833,7 +840,7 @@ function VideoCard({ item, onHitClick, isActive, shouldLoad }) {
     } else {
       video.pause();
     }
-  }, [shouldLoad]);
+  }, [isNear]);
 
   // Dropping src (going >1 slide away) doesn't cancel an in-flight fetch on
   // its own — load() forces the element to abandon it and release the buffer.
@@ -907,11 +914,11 @@ function VideoCard({ item, onHitClick, isActive, shouldLoad }) {
           ref={videoRef}
           className="videos__media"
           src={shouldLoad ? item.src : undefined}
-          autoPlay={shouldLoad}
+          autoPlay={isNear}
           muted={muted}
           loop
           playsInline
-          preload={shouldLoad ? "metadata" : "none"}
+          preload={shouldLoad ? "auto" : "none"}
         />
       </a>
       <div className="videos__controls">
@@ -1157,13 +1164,16 @@ function VideoSection() {
           <div className="videos__track" ref={trackRef}>
             {VIDEO_SLIDE_CELLS.map((i) => {
               const item = VIDEO_SLIDES[i % VIDEO_COUNT];
+              const isNear = Math.abs(i - active) <= 1;
+              const shouldLoad = isNear || VIDEO_WRAP_ITEMS.has(i % VIDEO_COUNT);
               return (
                 <div className="videos__slide" key={i} aria-current={i === active}>
                   <div className="videos__media-frame" style={{ aspectRatio: item.ratio }}>
                     <VideoCard
                       item={item}
                       isActive={i === active}
-                      shouldLoad={Math.abs(i - active) <= 1}
+                      isNear={isNear}
+                      shouldLoad={shouldLoad}
                       onHitClick={(e) => {
                         if (dragRef.current.moved) {
                           e.preventDefault();
