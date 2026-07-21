@@ -564,35 +564,55 @@ function WorkSection() {
                 key={item.id}
                 style={{ "--i": WORK_ITEMS.indexOf(item) }}
               >
-                <div className="work-card__media" style={{ aspectRatio: item.ratio }}>
-                  {item.image ? (
-                    <img
-                      className="work-card__image"
-                      src={item.image}
-                      alt={item.title}
-                      loading="lazy"
-                      draggable={false}
-                    />
-                  ) : item.pixelate ? (
-                    <PixelatedVideo src={item.video} label={item.title} />
-                  ) : item.zoom ? (
-                    <ZoomableVideo item={item} />
-                  ) : (
-                    <PlainWorkVideo item={item} />
-                  )}
-                </div>
                 {item.link ? (
                   <a
                     href={item.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="work-card__title-link"
+                    className="work-card__link"
                     aria-label={`${item.title} - opens in new tab`}
                   >
-                    {item.title}
+                    <div className="work-card__media" style={{ aspectRatio: item.ratio }}>
+                      {item.image ? (
+                        <img
+                          className="work-card__image"
+                          src={item.image}
+                          alt={item.title}
+                          loading="lazy"
+                          draggable={false}
+                        />
+                      ) : item.pixelate ? (
+                        <PixelatedVideo src={item.video} label={item.title} />
+                      ) : item.zoom ? (
+                        <ZoomableVideo item={item} />
+                      ) : (
+                        <PlainWorkVideo item={item} />
+                      )}
+                      <span className="work-card__overlay" aria-hidden="true" />
+                    </div>
+                    <h2 className="work-card__title">{item.title}</h2>
                   </a>
                 ) : (
-                  <h2 className="work-card__title">{item.title}</h2>
+                  <>
+                    <div className="work-card__media" style={{ aspectRatio: item.ratio }}>
+                      {item.image ? (
+                        <img
+                          className="work-card__image"
+                          src={item.image}
+                          alt={item.title}
+                          loading="lazy"
+                          draggable={false}
+                        />
+                      ) : item.pixelate ? (
+                        <PixelatedVideo src={item.video} label={item.title} />
+                      ) : item.zoom ? (
+                        <ZoomableVideo item={item} />
+                      ) : (
+                        <PlainWorkVideo item={item} />
+                      )}
+                    </div>
+                    <h2 className="work-card__title">{item.title}</h2>
+                  </>
                 )}
               </article>
             ))}
