@@ -411,8 +411,42 @@ function Hero() {
 /* Columns of pixel blocks across the card — lower = chunkier */
 const PIXELATE_COLUMNS = 120;
 
-function PixelatedVideo({ src, label }) {
+// Mobile browsers cap how many <video> elements can autoplay at once and
+// silently fall back to a tap-to-play affordance past that limit — with 5+
+// work-card videos all trying to autoplay on mount, some always lost. This
+// defers both the fetch and the play() call until a card is actually (near)
+// the viewport, so only what's on screen is ever competing for that slot.
+function useAutoplayInView(rootMargin = "200px") {
   const videoRef = useRef(null);
+  const [inView, setInView] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setInView(entry.isIntersecting);
+        if (entry.isIntersecting) setLoaded(true);
+      },
+      { rootMargin, threshold: 0.15 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (inView) video.play().catch(() => {});
+    else video.pause();
+  }, [inView]);
+
+  return { videoRef, loaded };
+}
+
+function PixelatedVideo({ src, label }) {
+  const { videoRef, loaded } = useAutoplayInView();
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -440,12 +474,11 @@ function PixelatedVideo({ src, label }) {
       <video
         ref={videoRef}
         className="work-card__video work-card__video--source"
-        src={src}
-        autoPlay
+        src={loaded ? src : undefined}
         muted
         loop
         playsInline
-        preload="metadata"
+        preload={loaded ? "auto" : "none"}
         aria-hidden="true"
       />
       <canvas ref={canvasRef} className="work-card__video work-card__video--pixelated" aria-label={label} />
@@ -454,6 +487,7 @@ function PixelatedVideo({ src, label }) {
 }
 
 function ZoomableVideo({ item }) {
+  const { videoRef, loaded } = useAutoplayInView();
   const [muted, setMuted] = useState(true);
 
   const toggleMute = (e) => {
@@ -465,13 +499,13 @@ function ZoomableVideo({ item }) {
   return (
     <>
       <video
+        ref={videoRef}
         className="work-card__video"
-        src={item.video}
-        autoPlay
+        src={loaded ? item.video : undefined}
         muted={item.sound ? muted : true}
         loop
         playsInline
-        preload="metadata"
+        preload={loaded ? "auto" : "none"}
         aria-label={item.title}
         style={{
           transform: "translate(0%, 0%) scale(1.01)",
@@ -489,6 +523,23 @@ function ZoomableVideo({ item }) {
         </button>
       )}
     </>
+  );
+}
+
+function PlainWorkVideo({ item }) {
+  const { videoRef, loaded } = useAutoplayInView();
+
+  return (
+    <video
+      ref={videoRef}
+      className="work-card__video"
+      src={loaded ? item.video : undefined}
+      muted
+      loop
+      playsInline
+      preload={loaded ? "auto" : "none"}
+      aria-label={item.title}
+    />
   );
 }
 
@@ -523,16 +574,7 @@ function WorkSection() {
                   ) : item.zoom ? (
                     <ZoomableVideo item={item} />
                   ) : (
-                    <video
-                      className="work-card__video"
-                      src={item.video}
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                      preload="metadata"
-                      aria-label={item.title}
-                    />
+                    <PlainWorkVideo item={item} />
                   )}
                 </div>
                 {item.link ? (
