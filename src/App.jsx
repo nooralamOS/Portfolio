@@ -1035,10 +1035,12 @@ function VideoSection() {
       }
       const wrapped = ((active % VIDEO_COUNT) + VIDEO_COUNT) % VIDEO_COUNT + VIDEO_COUNT;
       track.style.transition = "none";
+      track.classList.add("is-snapping");
       setActive(wrapped);
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           track.style.transition = "";
+          track.classList.remove("is-snapping");
           processQueue();
         });
       });

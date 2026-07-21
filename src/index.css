@@ -613,6 +613,14 @@ button {
   transition: none;
 }
 
+/* Suppresses each slide's own opacity/scale transition during the instant
+   post-wraparound snap — otherwise the two cells swapping aria-current
+   fade/scale on their normal 0.6s timer even though the track itself
+   re-centers with no transition, producing a visible flash. */
+.videos__track.is-snapping .videos__slide {
+  transition: none;
+}
+
 .videos__slide {
   flex: none;
   display: flex;
