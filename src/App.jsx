@@ -1179,7 +1179,7 @@ function VideoSection() {
   return (
     <section className="section videos" aria-label="Videos, movies, growth, and content">
       <h2 className="section__heading">
-        videos/<wbr />movies/<wbr />growth/<wbr />content
+        videos/<wbr />movies/<wbr />growth
       </h2>
       <div className="videos__stage">
         <div className="videos__viewport" ref={viewportRef}>
