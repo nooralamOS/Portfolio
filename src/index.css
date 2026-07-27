@@ -224,7 +224,8 @@ button {
     transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.nav__link--muted:hover .nav__tooltip {
+.nav__link--muted:hover .nav__tooltip,
+.nav__tooltip.is-visible {
   opacity: 1;
   transform: scale(1) translateY(0);
 }
@@ -416,6 +417,46 @@ button {
   text-decoration: none;
 }
 
+.request-access-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 60;
+  width: clamp(120px, 11vw, 168px);
+  height: auto;
+  opacity: 0;
+  pointer-events: none;
+  user-select: none;
+  transition: opacity 0.16s ease;
+  will-change: transform;
+}
+
+.request-access-popup.is-visible {
+  opacity: 1;
+}
+
+/* Touch fallback for the cursor-follow popups above — mouse events don't
+   make sense on a touch device, so this just centers the same image in the
+   frame. Visibility is driven by TapPopup's JS (tap shows it, auto-hides
+   after a beat) rather than a lingering :hover simulation. */
+.mobile-popup {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 5;
+  width: clamp(120px, 11vw, 168px);
+  height: auto;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  user-select: none;
+  transition: opacity 0.16s ease;
+}
+
+.mobile-popup.is-visible {
+  opacity: 1;
+}
+
 .work-card__media {
   position: relative;
   aspect-ratio: 2050 / 1322;
@@ -433,7 +474,8 @@ button {
 .work-card__overlay {
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.14);
+  --overlay-color: rgba(255, 255, 255, 0.30);
+  background: var(--overlay-color);
   opacity: 0;
   transition: opacity 0.2s;
   pointer-events: none;
@@ -441,6 +483,14 @@ button {
 
 .work-card__link:hover .work-card__overlay {
   opacity: 1;
+}
+
+/* tap simulates :hover on touch devices — the white wash reads as a stuck/
+   broken tap state there, so skip it entirely and keep the media clean */
+@media (hover: none), (pointer: coarse) {
+  .work-card__link:hover .work-card__overlay {
+    opacity: 0;
+  }
 }
 
 .work-card__video,
@@ -468,22 +518,9 @@ button {
   right: clamp(10px, 1.2vw, 16px);
   bottom: clamp(10px, 1.2vw, 16px);
   z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: clamp(24px, 2vw, 32px);
-  height: clamp(24px, 2vw, 32px);
-  border-radius: 999px;
-  background: #FF9909;
-  color: #4A40FF;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s;
-}
-
-.work-card__soundbtn svg {
-  width: 45%;
-  height: 45%;
 }
 
 .work-card__media:hover .work-card__soundbtn {
@@ -726,7 +763,7 @@ button {
   z-index: 2;
   display: flex;
   align-items: center;
-  gap: clamp(8px, 0.8vw, 12px);
+  gap: clamp(5px, 0.5vw, 8px);
   padding: clamp(10px, 1.2vw, 16px);
   background: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent 70%);
 }
@@ -736,41 +773,79 @@ button {
   display: none;
 }
 
-.videos__playbtn,
-.videos__soundbtn {
+/* visual-only stand-in for slides with no real video (e.g. SMOKING KILLS) —
+   looks like the real controls bar but takes no input */
+.videos__controls--dummy {
+  pointer-events: none;
+  cursor: default;
+}
+
+.videos__playbtn {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: clamp(24px, 2vw, 32px);
-  height: clamp(24px, 2vw, 32px);
-  border-radius: 999px;
-  background: #fff;
-  color: #000;
+  width: clamp(18px, 1.5vw, 24px);
+  height: clamp(18px, 1.5vw, 24px);
+  background: none;
+  color: rgba(217, 217, 217, 0.5);
 }
 
-.videos__playbtn svg,
-.videos__soundbtn svg {
-  width: 45%;
-  height: 45%;
+.videos__playbtn:hover {
+  color: var(--orange);
+}
+
+.videos__playbtn svg {
+  width: 62%;
+  height: 62%;
+}
+
+/* Shared visual styling for every sound-toggle button (Pace work-card and
+   the video-carousel controls) — change here to update the icon everywhere
+   it appears, instead of per-instance. */
+.sound-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(18px, 1.5vw, 24px);
+  height: clamp(18px, 1.5vw, 24px);
+  background: none;
+  color: rgba(217, 217, 217, 0.5);
+}
+
+.sound-btn:hover {
+  color: var(--orange);
+}
+
+.sound-btn svg {
+  width: 75%;
+  height: 75%;
 }
 
 .videos__scrubber {
   position: relative;
   flex: 1;
-  height: 4px;
+  height: clamp(4.5px, 0.375vw, 6px);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.35);
+  background: rgba(217, 217, 217, 0.5);
   cursor: pointer;
   touch-action: none;
+  /* Clips the fill to the track's own rounded shape instead of letting the
+     fill compute its own corner radius — at low progress the fill's width
+     drops below its height, and an independent border-radius:999px on that
+     box caps differently per axis, ballooning into a tall capsule that
+     visibly pokes outside the track. */
+  overflow: hidden;
 }
 
 .videos__scrubber-fill {
   position: absolute;
-  inset: 0;
-  transform-origin: left;
+  top: 0;
+  bottom: 0;
+  left: 0;
   border-radius: 999px;
-  background: #fff;
+  background: var(--orange);
 }
 
 .videos__stepper-row {
@@ -811,7 +886,7 @@ button {
   border-radius: 999px;
   background: #d9d9d9;
   color: #a1a1a1;
-  transition-property: color, background, opacity;
+  transition-property: opacity;
   transition-duration: 0.2s;
 }
 
@@ -822,6 +897,28 @@ button {
 
 .videos__arrow:hover {
   color: var(--orange);
+}
+
+.video-stepper .pasito-step:hover {
+  background: var(--orange);
+}
+
+/* blue stepper theme (toggled via STEPPER_BLUE_THEME in App.jsx) — mirrors
+   the default grey/orange relationship: default = inactive-pill color,
+   hover = active-pill color */
+.videos__stepper-row--blue .videos__arrow {
+  background: var(--orange);
+  color: #ffc294;
+}
+
+.videos__stepper-row--blue .videos__arrow:hover {
+  color: #4a40ff;
+}
+
+.videos__stepper-row--blue .video-stepper {
+  --pill-container-bg: var(--orange);
+  --pill-bg: #ffc294;
+  --pill-active-bg: #4a40ff;
 }
 
 /* ---------- responsive ---------- */

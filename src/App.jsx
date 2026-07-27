@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Stepper } from "pasito";
 import "pasito/styles.css";
 import BrandDistortion from "./components/BrandDistortion.jsx";
@@ -133,7 +134,7 @@ const r2Src = (filename) => `${VIDEO_BASE}/${encodeURIComponent(filename)}`;
 
 const WORK_ITEMS = [
   { id: "hlm", title: "Humanity’s Last Machine", video: r2Src("HLM-compressed.mp4"), ratio: "3416 / 1712", link: "https://humanityslastmachine.com", zoom: true },
-  { id: "wmzt", title: "World Model Deep-Dive", video: r2Src("wmzt-compressed.mp4"), ratio: "3360 / 1790", link: "https://worldmodel.netlify.app" },
+  { id: "wmzt", title: "World Model Deep-Dive", video: r2Src("wmzt-compressed.mp4"), ratio: "3360 / 1790", link: "mailto:noorunalam@gmail.com", requestAccess: true },
   { id: "mtc", title: "MTC", video: r2Src("MTC-compressed.mp4"), ratio: "1920 / 1080", link: "https://mtc.so" },
   { id: "pace", title: "Pace V3 Launch Video", video: r2Src("PACE-cpmpressed.mp4"), ratio: "3840 / 2160", link: "https://withpace.com/", zoom: true, sound: true },
   { id: "ziptero", title: "Ziptero (launching soon)", video: r2Src("Ziptero-compressed.mp4"), ratio: "3416 / 1682", pixelate: true },
@@ -197,8 +198,12 @@ const DRAG_THRESHOLD_RATIO = 0.18;
 
 const SHOW_WORK_LINK = true;
 const SHOW_PLAY_LINK = true;
+// true = blue arrow/pill theme, false = old grey/orange look
+const STEPPER_BLUE_THEME = false;
 
 function Header() {
+  const funRef = useRef(null);
+
   return (
     <header className="header">
       <a href="#top" aria-label="noorslens home">
@@ -211,13 +216,14 @@ function Header() {
           </a>
         )}
         {SHOW_PLAY_LINK && (
-          <a className="nav__link nav__link--muted" href="#play" aria-disabled="true">
-            PLAY
-            <img
-              className="nav__tooltip"
-              src="/icons/coming-soon.svg"
+          <a ref={funRef} className="nav__link nav__link--muted" href="#play" aria-disabled="true">
+            FUN
+            <TapPopup
+              hoverRef={funRef}
+              src="/icons/coming-soon:D.svg"
               alt="coming soon"
-              draggable="false"
+              ariaHidden={false}
+              className="nav__tooltip"
             />
           </a>
         )}
@@ -235,6 +241,23 @@ function MorphingRole() {
   const setHovered = (value) => {
     hoveredRef.current = value;
     setHoveredState(value);
+  };
+
+  // Touch has no hover to leave, so a tap only ever gets the onFocus side of
+  // this — tapping again keeps the element already focused, no blur fires,
+  // and it's stuck until something else steals focus. On coarse pointers,
+  // hand control to a plain click-toggle instead: focus/blur are ignored
+  // there (focus fires *before* click on the same tap, so leaving them live
+  // would toggle true then immediately back to false on the first tap).
+  const isCoarsePointer = () => window.matchMedia("(hover: none), (pointer: coarse)").matches;
+  const onFocus = () => {
+    if (!isCoarsePointer()) setHovered(true);
+  };
+  const onBlur = () => {
+    if (!isCoarsePointer()) setHovered(false);
+  };
+  const onClick = () => {
+    if (isCoarsePointer()) setHovered(!hoveredRef.current);
   };
 
   useLayoutEffect(() => {
@@ -258,15 +281,16 @@ function MorphingRole() {
       className={`morph${hovered ? " is-hovered" : ""}`}
       tabIndex={0}
       ref={wrapRef}
-      onFocus={() => setHovered(true)}
-      onBlur={() => setHovered(false)}
+      onFocus={onFocus}
+      onBlur={onBlur}
+      onClick={onClick}
     >
       <span
         className="morph__hitbox"
         aria-hidden="true"
         style={hitboxWidth ? { width: hitboxWidth } : undefined}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        onMouseEnter={onFocus}
+        onMouseLeave={onBlur}
       />
       <span>design</span>
       <span className="morph__out">
@@ -294,6 +318,7 @@ function NoorPopup() {
   const [visible, setVisible] = useState(false);
   const visibleRef = useRef(false);
   const stickyRef = useRef(false);
+  const stickyTimerRef = useRef(null);
   const pos = useRef({ x: 0, y: 0, tx: 0, ty: 0 });
   const rafRef = useRef(0);
 
@@ -334,6 +359,7 @@ function NoorPopup() {
   const hide = () => {
     visibleRef.current = false;
     stickyRef.current = false;
+    clearTimeout(stickyTimerRef.current);
     setVisible(false);
   };
 
@@ -380,6 +406,8 @@ function NoorPopup() {
     setTarget(t.clientX, t.clientY, true);
     visibleRef.current = true;
     stickyRef.current = true;
+    clearTimeout(stickyTimerRef.current);
+    stickyTimerRef.current = setTimeout(hide, TAP_POPUP_DURATION);
     setVisible(true);
   };
 
@@ -519,7 +547,7 @@ function ZoomableVideo({ item }) {
       {item.sound && (
         <button
           type="button"
-          className="work-card__soundbtn"
+          className="work-card__soundbtn sound-btn"
           aria-label={muted ? "Unmute video" : "Mute video"}
           onClick={toggleMute}
         >
@@ -552,6 +580,219 @@ const WORK_COLUMNS = [
   WORK_ITEMS.filter((_, i) => i % 2 === 1),
 ];
 
+/* Same lagging-inertia follow as NoorPopup, but scoped to hover over a single
+   element (the card link) instead of the whole viewport. */
+const REQUEST_ACCESS_EASE = 0.2;
+const REQUEST_ACCESS_OFFSET = { x: 22, y: 22 };
+
+// Devices without a real pointer get TapPopup below instead — mouse events
+// are unreliable there, and dragging a cursor-follow image around under a
+// touch doesn't make sense anyway.
+const HOVER_CAPABLE_QUERY = "(hover: hover) and (pointer: fine) and (min-width: 769px)";
+
+// How long a tap-revealed popup stays up before auto-hiding.
+const TAP_POPUP_DURATION = 1500;
+
+// Touch fallback for hover-only popups (nav tooltip, request-access,
+// coming-soon): shows on tap and auto-hides after TAP_POPUP_DURATION,
+// instead of relying on the browser's "tap simulates :hover until you tap
+// elsewhere" quirk, which leaves it stuck open indefinitely.
+function TapPopup({ hoverRef, src, alt = "", ariaHidden = true, className }) {
+  const [visible, setVisible] = useState(false);
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    const el = hoverRef.current;
+    if (!el) return;
+
+    const show = () => {
+      setVisible(true);
+      clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => setVisible(false), TAP_POPUP_DURATION);
+    };
+
+    el.addEventListener("touchstart", show, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", show);
+      clearTimeout(timerRef.current);
+    };
+  }, [hoverRef]);
+
+  return (
+    <img
+      className={`${className}${visible ? " is-visible" : ""}`}
+      src={src}
+      alt={alt}
+      aria-hidden={ariaHidden ? "true" : undefined}
+      draggable={false}
+    />
+  );
+}
+
+function CursorFollowPopup({ hoverRef, src, enabled = true }) {
+  const imgRef = useRef(null);
+  const [visible, setVisible] = useState(false);
+  const [hoverCapable, setHoverCapable] = useState(true);
+  // Tracks real pointer-over-element state, independent of `enabled` — kept
+  // running continuously so a click that flips `enabled` true mid-hover (e.g.
+  // recentering a carousel slide under a stationary cursor) can show the
+  // popup immediately instead of waiting for a mouseenter that will never
+  // fire again for a pointer that never left.
+  const hoveringRef = useRef(false);
+  const enabledRef = useRef(enabled);
+  enabledRef.current = enabled;
+  const pos = useRef({ x: 0, y: 0, tx: 0, ty: 0 });
+  const rafRef = useRef(0);
+
+  useEffect(() => {
+    const query = window.matchMedia(HOVER_CAPABLE_QUERY);
+    const update = () => setHoverCapable(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    const tick = () => {
+      const p = pos.current;
+      p.x += (p.tx - p.x) * REQUEST_ACCESS_EASE;
+      p.y += (p.ty - p.y) * REQUEST_ACCESS_EASE;
+      if (imgRef.current) {
+        imgRef.current.style.transform = `translate3d(${p.x}px, ${p.y}px, 0)`;
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, []);
+
+  useEffect(() => {
+    const el = hoverRef.current;
+    if (!el || !hoverCapable) return;
+
+    const setTarget = (clientX, clientY, snap) => {
+      const x = clientX + REQUEST_ACCESS_OFFSET.x;
+      const y = clientY + REQUEST_ACCESS_OFFSET.y;
+      pos.current.tx = x;
+      pos.current.ty = y;
+      if (snap) {
+        pos.current.x = x;
+        pos.current.y = y;
+      }
+    };
+
+    const onMove = (e) => setTarget(e.clientX, e.clientY, !hoveringRef.current);
+    const onEnter = (e) => {
+      setTarget(e.clientX, e.clientY, true);
+      hoveringRef.current = true;
+      setVisible(enabledRef.current);
+    };
+    const onLeave = () => {
+      hoveringRef.current = false;
+      setVisible(false);
+    };
+
+    el.addEventListener("mousemove", onMove);
+    el.addEventListener("mouseenter", onEnter);
+    el.addEventListener("mouseleave", onLeave);
+    return () => {
+      el.removeEventListener("mousemove", onMove);
+      el.removeEventListener("mouseenter", onEnter);
+      el.removeEventListener("mouseleave", onLeave);
+    };
+  }, [hoverRef, hoverCapable]);
+
+  // Re-evaluate visibility whenever `enabled` changes, in case the pointer
+  // is already over the element (see hoveringRef comment above).
+  useEffect(() => {
+    setVisible(enabled && hoveringRef.current);
+  }, [enabled]);
+
+  // Mobile/touch gets the plain CSS-hover .mobile-popup instead (rendered
+  // by the caller) — skip mounting this cursor-follow version entirely.
+  if (!hoverCapable) return null;
+
+  // Portaled to <body> — position: fixed is otherwise contained by any
+  // transformed ancestor (the carousel track/slide both use transform),
+  // which would make it track relative to that box instead of the viewport.
+  return createPortal(
+    <img
+      ref={imgRef}
+      className={`request-access-popup${visible ? " is-visible" : ""}`}
+      src={src}
+      alt=""
+      aria-hidden="true"
+      draggable={false}
+    />,
+    document.body
+  );
+}
+
+function WorkCard({ item, index }) {
+  const linkRef = useRef(null);
+
+  const media = (
+    <div className="work-card__media" style={{ aspectRatio: item.ratio }}>
+      {item.image ? (
+        <img
+          className="work-card__image"
+          src={item.image}
+          alt={item.title}
+          loading="lazy"
+          draggable={false}
+        />
+      ) : item.pixelate ? (
+        <PixelatedVideo src={item.video} label={item.title} />
+      ) : item.zoom ? (
+        <ZoomableVideo item={item} />
+      ) : (
+        <PlainWorkVideo item={item} />
+      )}
+      {item.link && (
+        <span
+          className="work-card__overlay"
+          aria-hidden="true"
+          style={
+            item.id === "hlm"
+              ? { "--overlay-color": "rgba(255, 255, 255, 0.40)" }
+              : item.id === "pace"
+              ? { "--overlay-color": "rgba(255, 255, 255, 0.5)" }
+              : undefined
+          }
+        />
+      )}
+      {item.requestAccess && (
+        <TapPopup hoverRef={linkRef} src="/icons/request-access.svg" className="mobile-popup" />
+      )}
+    </div>
+  );
+
+  return (
+    <article className="work-card" style={{ "--i": index }}>
+      {item.link ? (
+        <>
+          <a
+            ref={linkRef}
+            href={item.link}
+            {...(item.requestAccess ? {} : { target: "_blank", rel: "noopener noreferrer" })}
+            className="work-card__link"
+            aria-label={item.requestAccess ? `Request access to ${item.title}` : `${item.title} - opens in new tab`}
+          >
+            {media}
+            <h2 className="work-card__title">{item.title}</h2>
+          </a>
+          {item.requestAccess && <CursorFollowPopup hoverRef={linkRef} src="/icons/request-access.svg" />}
+        </>
+      ) : (
+        <>
+          {media}
+          <h2 className="work-card__title">{item.title}</h2>
+        </>
+      )}
+    </article>
+  );
+}
+
 function WorkSection() {
   return (
     <section className="work" id="work" aria-label="Selected work">
@@ -559,62 +800,7 @@ function WorkSection() {
         {WORK_COLUMNS.map((column, c) => (
           <div className="work__col" key={c}>
             {column.map((item) => (
-              <article
-                className="work-card"
-                key={item.id}
-                style={{ "--i": WORK_ITEMS.indexOf(item) }}
-              >
-                {item.link ? (
-                  <a
-                    href={item.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="work-card__link"
-                    aria-label={`${item.title} - opens in new tab`}
-                  >
-                    <div className="work-card__media" style={{ aspectRatio: item.ratio }}>
-                      {item.image ? (
-                        <img
-                          className="work-card__image"
-                          src={item.image}
-                          alt={item.title}
-                          loading="lazy"
-                          draggable={false}
-                        />
-                      ) : item.pixelate ? (
-                        <PixelatedVideo src={item.video} label={item.title} />
-                      ) : item.zoom ? (
-                        <ZoomableVideo item={item} />
-                      ) : (
-                        <PlainWorkVideo item={item} />
-                      )}
-                      <span className="work-card__overlay" aria-hidden="true" />
-                    </div>
-                    <h2 className="work-card__title">{item.title}</h2>
-                  </a>
-                ) : (
-                  <>
-                    <div className="work-card__media" style={{ aspectRatio: item.ratio }}>
-                      {item.image ? (
-                        <img
-                          className="work-card__image"
-                          src={item.image}
-                          alt={item.title}
-                          loading="lazy"
-                          draggable={false}
-                        />
-                      ) : item.pixelate ? (
-                        <PixelatedVideo src={item.video} label={item.title} />
-                      ) : item.zoom ? (
-                        <ZoomableVideo item={item} />
-                      ) : (
-                        <PlainWorkVideo item={item} />
-                      )}
-                    </div>
-                    <h2 className="work-card__title">{item.title}</h2>
-                  </>
-                )}
-              </article>
+              <WorkCard item={item} index={WORK_ITEMS.indexOf(item)} key={item.id} />
             ))}
           </div>
         ))}
@@ -819,6 +1005,7 @@ function VideoCard({ item, onHitClick, isActive, isNear, shouldLoad }) {
   const videoRef = useRef(null);
   const scrubRef = useRef(null);
   const scrubbingRef = useRef(false);
+  const hitRef = useRef(null);
   const [playing, setPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
   const [muted, setMuted] = useState(true);
@@ -907,16 +1094,32 @@ function VideoCard({ item, onHitClick, isActive, isNear, shouldLoad }) {
 
   if (isImage) {
     return (
-      <a
-        className="videos__slide-hit"
-        href={item.link}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label={item.title}
-        onClick={onHitClick}
-      >
-        <img className="videos__media" src={item.src} alt={item.title} draggable={false} style={{ objectFit: "contain", width: "100%", height: "100%" }} />
-      </a>
+      <>
+        <a
+          ref={hitRef}
+          className="videos__slide-hit"
+          href={item.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={item.title}
+          onClick={onHitClick}
+        >
+          <img className="videos__media" src={item.src} alt={item.title} draggable={false} style={{ objectFit: "contain", width: "100%", height: "100%" }} />
+        </a>
+        <div className="videos__controls videos__controls--dummy" aria-hidden="true">
+          <div className="videos__playbtn">
+            <PlayIcon />
+          </div>
+          <div className="videos__scrubber">
+            <div className="videos__scrubber-fill" style={{ width: "0%" }} />
+          </div>
+          <div className="videos__soundbtn sound-btn">
+            <SoundOffIcon />
+          </div>
+        </div>
+        <CursorFollowPopup hoverRef={hitRef} src="/icons/coming-soon.svg" enabled={isActive} />
+        {isActive && <TapPopup hoverRef={hitRef} src="/icons/coming-soon.svg" className="mobile-popup" />}
+      </>
     );
   }
 
@@ -959,11 +1162,11 @@ function VideoCard({ item, onHitClick, isActive, isNear, shouldLoad }) {
           onPointerUp={onScrubUp}
           onPointerCancel={onScrubUp}
         >
-          <div className="videos__scrubber-fill" style={{ transform: `scaleX(${progress})` }} />
+          <div className="videos__scrubber-fill" style={{ width: `${progress * 100}%` }} />
         </div>
         <button
           type="button"
-          className="videos__soundbtn"
+          className="videos__soundbtn sound-btn"
           aria-label={muted ? "Unmute preview" : "Mute preview"}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={toggleMute}
@@ -1086,6 +1289,10 @@ function VideoSection() {
 
     const onDown = (e) => {
       if (animatingRef.current) return;
+      // Native listener on an ancestor fires before React's synthetic
+      // handlers, so the scrubber's own stopPropagation() can't stop this —
+      // bail explicitly for anything inside the controls bar instead.
+      if (e.target.closest(".videos__controls")) return;
       d.dragging = true;
       d.moved = false;
       d.startX = e.clientX;
@@ -1187,7 +1394,11 @@ function VideoSection() {
             {VIDEO_SLIDE_CELLS.map((i) => {
               const item = VIDEO_SLIDES[i % VIDEO_COUNT];
               const isNear = Math.abs(i - active) <= 1;
-              const shouldLoad = isNear || VIDEO_WRAP_ITEMS.has(i % VIDEO_COUNT);
+              // Preload one step further than autoplay/play range so a slide
+              // has been buffering for a while by the time you scrub to it,
+              // without also pushing more videos into the autoplay race
+              // (mobile browsers cap concurrent autoplaying <video>s).
+              const shouldLoad = Math.abs(i - active) <= 2 || VIDEO_WRAP_ITEMS.has(i % VIDEO_COUNT);
               return (
                 <div className="videos__slide" key={i} aria-current={i === active}>
                   <div className="videos__media-frame" style={{ aspectRatio: item.ratio }}>
@@ -1227,7 +1438,7 @@ function VideoSection() {
           </div>
         </div>
       </div>
-      <div className="videos__stepper-row">
+      <div className={`videos__stepper-row${STEPPER_BLUE_THEME ? " videos__stepper-row--blue" : ""}`}>
         <button
           type="button"
           className="videos__arrow videos__arrow--prev"
