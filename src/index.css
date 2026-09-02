@@ -313,6 +313,8 @@ button {
 
 .morph__in-inner {
   opacity: 0;
+  filter: blur(2px);
+  letter-spacing: 0.15em;
 }
 
 .morph.is-hovered .morph__out {
@@ -325,12 +327,12 @@ button {
 
 .morph.is-hovered .morph__out-inner {
   opacity: 0;
-  filter: blur(2px);
-  letter-spacing: 0.15em;
 }
 
 .morph.is-hovered .morph__in-inner {
   opacity: 1;
+  filter: blur(0);
+  letter-spacing: normal;
 }
 
 @media (prefers-reduced-motion: reduce) {
