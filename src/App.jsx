@@ -137,7 +137,7 @@ const WORK_ITEMS = [
   { id: "wmzt", title: "World Model Deep-Dive", video: r2Src("wmzt-compressed.mp4"), ratio: "3360 / 1790", link: "mailto:noorunalam@gmail.com", requestAccess: true },
   { id: "mtc", title: "MTC", video: r2Src("MTC-compressed.mp4"), ratio: "1920 / 1080", link: "https://mtc.so" },
   { id: "pace", title: "Pace V3 Launch Video", video: r2Src("PACE-cpmpressed.mp4"), ratio: "3840 / 2160", link: "https://withpace.com/", zoom: true, sound: true },
-  { id: "ziptero", title: "Ziptero (launching soon)", video: r2Src("Ziptero-compressed.mp4"), ratio: "3416 / 1682", pixelate: true },
+  { id: "ziptero", title: "Ziptero (launching soon)", video: r2Src("Ziptero-compressed.mp4"), ratio: "3416 / 1682", pixelate: true, comingSoon: true },
 ];
 
 const BRAND_SLIDES = [
@@ -179,9 +179,10 @@ const VIDEO_SLIDES = [
   },
   {
     id: "smoking",
-    src: "/images/SMOKING KILLS.png",
-    title: "SMOKING KILLS (coming soon)",
+    src: r2Src("Smoking Kills.mp4"),
+    title: "SMOKING KILLS",
     ratio: "2989 / 1674",
+    startAt: 2,
   },
 ];
 const VIDEO_COUNT = VIDEO_SLIDES.length;
@@ -260,6 +261,17 @@ function MorphingRole() {
     if (isCoarsePointer()) setHovered(!hoveredRef.current);
   };
 
+  // On coarse pointers a tap toggles it open; let a tap anywhere else on
+  // the page close it again instead of requiring a second tap on itself.
+  useEffect(() => {
+    if (!hovered || !isCoarsePointer()) return;
+    const onOutside = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setHovered(false);
+    };
+    document.addEventListener("pointerdown", onOutside);
+    return () => document.removeEventListener("pointerdown", onOutside);
+  }, [hovered]);
+
   useLayoutEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
@@ -293,11 +305,11 @@ function MorphingRole() {
         onMouseLeave={onBlur}
       />
       <span>design</span>
-      <span className="morph__out">
-        <span className="morph__out-inner">er/</span>
-      </span>
       <span className="morph__in">
-        <span className="morph__in-inner"> </span>
+        <span className="morph__in-inner">er/</span>
+      </span>
+      <span className="morph__out">
+        <span className="morph__out-inner"> </span>
       </span>
       <span>engineer</span>
     </span>
@@ -748,7 +760,7 @@ function WorkCard({ item, index }) {
       ) : (
         <PlainWorkVideo item={item} />
       )}
-      {item.link && (
+      {(item.link || item.comingSoon) && (
         <span
           className="work-card__overlay"
           aria-hidden="true"
@@ -763,6 +775,9 @@ function WorkCard({ item, index }) {
       )}
       {item.requestAccess && (
         <TapPopup hoverRef={linkRef} src="/icons/request-access.svg" className="mobile-popup" />
+      )}
+      {item.comingSoon && (
+        <TapPopup hoverRef={linkRef} src="/icons/coming-soon.svg" className="mobile-popup" />
       )}
     </div>
   );
@@ -782,6 +797,14 @@ function WorkCard({ item, index }) {
             <h2 className="work-card__title">{item.title}</h2>
           </a>
           {item.requestAccess && <CursorFollowPopup hoverRef={linkRef} src="/icons/request-access.svg" />}
+        </>
+      ) : item.comingSoon ? (
+        <>
+          <div ref={linkRef} className="work-card__link">
+            {media}
+            <h2 className="work-card__title">{item.title}</h2>
+          </div>
+          <CursorFollowPopup hoverRef={linkRef} src="/icons/coming-soon.svg" />
         </>
       ) : (
         <>
@@ -1037,6 +1060,24 @@ function VideoCard({ item, onHitClick, isActive, isNear, shouldLoad }) {
   }, [isActive]);
 
   useEffect(() => {
+    if (isImage || !item.startAt) return;
+    const video = videoRef.current;
+    const seekToStart = () => {
+      video.currentTime = item.startAt;
+    };
+    const onEnded = () => {
+      video.currentTime = item.startAt;
+      video.play().catch(() => {});
+    };
+    video.addEventListener("loadedmetadata", seekToStart);
+    video.addEventListener("ended", onEnded);
+    return () => {
+      video.removeEventListener("loadedmetadata", seekToStart);
+      video.removeEventListener("ended", onEnded);
+    };
+  }, [isImage, item.startAt]);
+
+  useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
     if (isNear) {
@@ -1139,7 +1180,7 @@ function VideoCard({ item, onHitClick, isActive, isNear, shouldLoad }) {
           src={shouldLoad ? item.src : undefined}
           autoPlay={isNear}
           muted={muted}
-          loop
+          loop={!item.startAt}
           playsInline
           preload={shouldLoad ? "auto" : "none"}
         />
