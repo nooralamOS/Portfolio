@@ -180,6 +180,7 @@ const VIDEO_SLIDES = [
   {
     id: "smoking",
     src: r2Src("Smoking Kills.mp4"),
+    link: "https://www.instagram.com/reel/DcwyoBnBcLJ/?stkn=dzJtZG9vemZybHU5",
     title: "SMOKING KILLS",
     ratio: "2989 / 1674",
     startAt: 2,
