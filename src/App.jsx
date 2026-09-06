@@ -4,6 +4,8 @@ import { Stepper } from "pasito";
 import "pasito/styles.css";
 import BrandDistortion from "./components/BrandDistortion.jsx";
 
+//cookie monster
+
 /* Frame 1's own bounding-box top-left in its 486-wide viewBox, scaled to the
    40px render width — the point that tracks the mouse. Frames 2-6's
    width/left/top (index.css) each offset from this same on-screen point. */
